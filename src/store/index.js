@@ -21,7 +21,7 @@ export default createStore({
     actions: {
         async loginUser({ commit }, { username, password }) {
             try {
-                const response = await axios.post('http://localhost:3000/users/login', { username, password });
+                const response = await axios.post(`${process.env.BACKEND_URL}/users/login`, { username, password });
                 commit('login', response.data.user);
             } catch (error) {
                 console.error(error);
