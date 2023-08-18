@@ -2,6 +2,7 @@ import { createStore } from 'vuex'
 import axios from 'axios'
 
 axios.defaults.withCredentials = true;
+axios.defaults.baseURL = process.env.BACKEND_URL;
 
 export default createStore({
     state: {
@@ -21,7 +22,7 @@ export default createStore({
     actions: {
         async loginUser({ commit }, { username, password }) {
             try {
-                const response = await axios.post(`${process.env.BACKEND_URL}/users/login`, { username, password });
+                const response = await axios.post('/users/login', { username, password });
                 commit('login', response.data.user);
             } catch (error) {
                 console.error(error);
