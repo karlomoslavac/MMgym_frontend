@@ -110,19 +110,19 @@
         methods: {
             async fetchData() {
                 try {
-                    const trainersResponse = await axios.get('http://localhost:3000/trainers');
+                    const trainersResponse = await axios.get('/trainers');
                     this.trainers = trainersResponse.data;
                     console.log('Trainers data:', this.trainers);
 
-                    const gymsResponse = await axios.get('http://localhost:3000/gyms');
+                    const gymsResponse = await axios.get('/gyms');
                     this.gyms = gymsResponse.data;
                     console.log('Gyms data:', this.gyms);
 
-                    const appointmentsResponse = await axios.get('http://localhost:3000/appointments');
+                    const appointmentsResponse = await axios.get('/appointments');
                     this.appointments = appointmentsResponse.data;
                     console.log('Appointments data:', this.appointments);
 
-                    const ownersResponse = await axios.get('http://localhost:3000/users');
+                    const ownersResponse = await axios.get('/users');
                     this.owners = ownersResponse.data.filter(user => user.role === 'owner');
                     console.log('Owners data:', this.owners);
 
@@ -134,7 +134,7 @@
             async addGym() {
                 try {
                     const response = await axios.post(
-                        'http://localhost:3000/gyms',
+                        '/gyms',
                         {
                             name: this.newGymName,
                             location: this.newGymLocation,
@@ -157,7 +157,7 @@
             },
             async deleteGym(id) {
                 try {
-                    const response = await axios.delete(`http://localhost:3000/gyms/${id}`);
+                    const response = await axios.delete(`/gyms/${id}`);
                     console.log(response);
                     this.gyms = this.gyms.filter(gym => gym._id !== id);
                 } catch (error) {
@@ -167,7 +167,7 @@
             },
             async addTrainer() {
                 try {
-                    const response = await axios.post('http://localhost:3000/trainers', {
+                    const response = await axios.post('/trainers', {
                         name: this.newTrainerName,
                         gym: this.newTrainerGym
                     });
@@ -181,8 +181,8 @@
             },
             async deleteTrainer(id) {
                 try {
-                    await axios.delete(`http://localhost:3000/trainers/${id}`);
-                    this.fetchData(); // Fetch the updated list of trainers from the server
+                    await axios.delete(`/trainers/${id}`);
+                    this.fetchData(); 
                 } catch (error) {
                     console.error(error);
                     this.errorMessage = 'An error occurred while deleting a trainer. Please try again.';
@@ -194,8 +194,8 @@
                     let date = new Date(this.newAppointmentDate);
                     let formattedDate = date.toISOString();
 
-                    const response = await axios.post('http://localhost:3000/appointments', {
-                        date: formattedDate, // Use the formatted date
+                    const response = await axios.post('/appointments', {
+                        date: formattedDate, 
                         trainer: this.newAppointmentTrainer
                     });
                     this.appointments.push(response.data);
@@ -208,8 +208,8 @@
             },
             async deleteAppointment(id) {
                 try {
-                    await axios.delete(`http://localhost:3000/appointments/${id}`);
-                    this.fetchData(); // Fetch the updated list of appointments from the server
+                    await axios.delete(`/appointments/${id}`);
+                    this.fetchData();
                 } catch (error) {
                     console.error(error);
                     this.errorMessage = 'An error occurred while deleting an appointment. Please try again.';
@@ -218,7 +218,6 @@
         },
     };
 </script>
-
 <style scoped>
 
     .dashboard-container {
