@@ -57,41 +57,44 @@
         },
         async created() {
             try {
-                const response = await axios.get('http://localhost:3000/gyms');
+                const response = await axios.get('/gyms');
                 this.gyms = response.data;
-                console.log('Gyms:', this.gyms); // Dodano
+                console.log('Gyms:', this.gyms);
             } catch (error) {
-                console.log('Error in created:', error); // Dodano
+                console.log('Error in created:', error);
                 this.errorMessage = 'An error occurred. Please try again.';
             }
         },
         methods: {
             async fetchTrainers() {
                 try {
-                    const response = await axios.get(`http://localhost:3000/trainers/${this.selectedGym}/trainers`);
+                    const response = await axios.get(`/trainers/${this.selectedGym}/trainers`);
                     this.trainers = response.data;
-                    console.log('Trainers:', this.trainers); // Dodano
+                    console.log('Trainers:', this.trainers);
                 } catch (error) {
-                    console.log('Error in fetchTrainers:', error); // Dodano
+                    console.log('Error in fetchTrainers:', error);
                     this.errorMessage = 'An error occurred. Please try again.';
                 }
             },
             async fetchAppointments() {
                 try {
                     console.log(this.selectedTrainer)
-                    const response = await axios.get(`http://localhost:3000/appointments`);
+                    const response = await axios.get('/appointments');
                     const allAppointments = response.data;
                     this.appointments = allAppointments.filter(appointment => appointment.trainer._id === this.selectedTrainer);
-                    console.log('Appointments:', this.appointments); // Dodano
+                    console.log('Appointments:', this.appointments);
                 } catch (error) {
-                    console.log('Error in fetchAppointments:', error); // Dodano
+                    console.log('Error in fetchAppointments:', error);
                     this.errorMessage = 'An error occurred. Please try again.';
                 }
             },
             async confirmAppointment() {
                 try {
-                    // Ovdje biste napravili POST zahtjev na va� API za stvaranje sastanka
-                    // await axios.post('http://localhost:3000/appointments', { ... });
+                    // fali kod za POST zahtjev
+                    const postData = {
+                       // fale podaci za POST zahtjevu
+                    };
+                    await axios.post('/appointments', postData);
 
                     const trainer = this.trainers.find(t => t._id === this.selectedTrainer);
                     const gym = this.gyms.find(g => g._id === this.selectedGym);
