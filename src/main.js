@@ -5,6 +5,7 @@ import router from './router';
 import store from './store';
 
 axios.defaults.baseURL = 'https://mmgymbackend.onrender.com';
+axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
