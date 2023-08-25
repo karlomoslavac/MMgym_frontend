@@ -1,12 +1,12 @@
-﻿<template>
+<template>
     <div class="dashboard-container">
-        <h1 class="dashboard-title">USER DASHBOARD</h1>
+        <h1 class="dashboard-title">GO HARD OR GO HOME.</h1>
         <p v-if="confirmationMessage" class="confirmation-message">{{ confirmationMessage }}</p>
 
         <div class="selection-container">
             <div class="selection-box">
                 <h2 class="section-title">Select a Gym</h2>
-                <select v-model="selectedGym" @change="fetchTrainers">
+                <select v-model="selectedGym" @change="resetTrainerAndAppointment">
                     <option disabled value="">Please select a gym</option>
                     <option v-for="gym in gyms" :key="gym._id" :value="gym._id">
                         {{ gym.name }}
@@ -14,9 +14,9 @@
                 </select>
             </div>
 
-            <div class="selection-box">
+            <div class="selection-box" v-if="selectedGym">
                 <h2 class="section-title">Select a Trainer</h2>
-                <select v-model="selectedTrainer" @change="fetchAppointments" :disabled="!selectedGym">
+                <select v-model="selectedTrainer" @change="fetchAppointments">
                     <option disabled value="">Please select a trainer</option>
                     <option v-for="trainer in trainers" :key="trainer._id" :value="trainer._id">
                         {{ trainer.name }}
@@ -24,18 +24,20 @@
                 </select>
             </div>
 
-            <div class="selection-box">
+            <div class="selection-box" v-if="selectedTrainer">
                 <h2 class="section-title">Select a Date/Time</h2>
-                <select v-model="selectedAppointment" :disabled="!selectedTrainer">
+                <select v-model="selectedAppointment">
                     <option disabled value="">Please select a date/time</option>
                     <option v-for="appointment in appointments" :key="appointment._id" :value="appointment._id">
-                        {{ appointment.date }}
+                        {{ formatAppointmentDate(appointment.date) }}
                     </option>
                 </select>
             </div>
         </div>
 
-        <button @click="confirmAppointment" class="confirm-button" :disabled="!selectedAppointment">Confirm Appointment</button>
+        <button @click="confirmAppointment" class="confirm-button" :disabled="!selectedGym || !selectedTrainer || !selectedAppointment">Confirm Appointment</button>
+
+        <p v-if="reservationSuccess" class="success-message">You have successfully booked an appointment!</p>
     </div>
 </template>
 
@@ -52,67 +54,115 @@
                 selectedTrainer: null,
                 selectedAppointment: null,
                 errorMessage: null,
-                confirmationMessage: null
+                confirmationMessage: null,
+                reservationSuccess: false
             };
         },
         async created() {
             try {
-                const response = await axios.get('/gyms');
+                const response = await axios.get('http://localhost:3000/gyms');
                 this.gyms = response.data;
-                console.log('Gyms:', this.gyms);
+
+                const loggedInUser = this.$store.state.user;
+                if (loggedInUser.selectedGym) {
+                    this.selectedGym = loggedInUser.selectedGym;
+                    this.selectedTrainer = loggedInUser.selectedTrainer;
+                    this.selectedAppointment = loggedInUser.selectedAppointment;
+                    await this.fetchTrainers();
+                }
             } catch (error) {
-                console.log('Error in created:', error);
+                console.error(error);
                 this.errorMessage = 'An error occurred. Please try again.';
             }
         },
+        watch: {
+            selectedGym: 'resetTrainerAndAppointment'
+        },
         methods: {
             async fetchTrainers() {
+                if (!this.selectedGym) {
+                    this.trainers = [];
+                    return;
+                }
                 try {
-                    const response = await axios.get(`/trainers/${this.selectedGym}/trainers`);
+                    const response = await axios.get(`http://localhost:3000/trainers/${this.selectedGym}/trainers`);
                     this.trainers = response.data;
-                    console.log('Trainers:', this.trainers);
                 } catch (error) {
-                    console.log('Error in fetchTrainers:', error);
+                    console.error(error);
                     this.errorMessage = 'An error occurred. Please try again.';
                 }
             },
             async fetchAppointments() {
                 try {
-                    console.log(this.selectedTrainer)
-                    const response = await axios.get('/appointments');
-                    const allAppointments = response.data;
-                    this.appointments = allAppointments.filter(appointment => appointment.trainer._id === this.selectedTrainer);
-                    console.log('Appointments:', this.appointments);
+                    if (!this.selectedTrainer) {
+                        this.appointments = [];
+                        return;
+                    }
+
+                    const response = await axios.get(`http://localhost:3000/appointments/trainers/${this.selectedTrainer}/appointments`);
+                    this.appointments = response.data;
                 } catch (error) {
-                    console.log('Error in fetchAppointments:', error);
                     this.errorMessage = 'An error occurred. Please try again.';
                 }
             },
             async confirmAppointment() {
                 try {
-                    // fali kod za POST zahtjev
-                    const postData = {
-                       // fale podaci za POST zahtjevu
-                    };
-                    await axios.post('/appointments', postData);
-
                     const trainer = this.trainers.find(t => t._id === this.selectedTrainer);
                     const gym = this.gyms.find(g => g._id === this.selectedGym);
                     const appointment = this.appointments.find(a => a._id === this.selectedAppointment);
 
                     if (trainer && gym && appointment) {
-                        console.log(`Confirmed appointment with ${trainer.name} at ${gym.name} on ${appointment.date}`);
-                        this.confirmationMessage = `You have successfully booked an appointment with ${trainer.name} at ${gym.name} on ${appointment.date}.`;
+                        const loggedInUser = this.$store.state.user;
+
+                        const data = {
+                            userId: loggedInUser._id,
+                            trainerId: trainer._id,
+                            gymId: gym._id,
+                            appointmentId: appointment._id
+                        };
+
+                        console.log("Sending the following data:", data);  // Debugging line
+
+                        const response = await axios.post('http://localhost:3000/appointments/user-appointments', data);
+                        console.log("Server response:", response.data);
+
+                        if (response.data && response.data.success) {
+                            this.confirmationMessage = `You have successfully booked an appointment with ${trainer.name} at ${gym.name} on ${appointment.date}.`;
+                            this.reservationSuccess = true;
+                            this.resetTrainerAndAppointment();
+                        } else {
+                            this.errorMessage = `Server returned an error: ${response.data ? response.data.message : 'No message'}`;
+                        }
+
                     } else {
-                        console.log('Error: Trainer, gym or appointment not selected');
                         this.errorMessage = 'Please select a trainer, gym and appointment.';
                     }
                 } catch (error) {
-                    console.log('Error in confirmAppointment:', error);
-                    this.errorMessage = 'An error occurred. Please try again.';
+                    console.error("Error response from server:", error.response ? error.response.data : 'No response data');  // Debugging line
+                    this.errorMessage = `An error occurred: ${error.message}`;
                 }
+            },
+            resetTrainerAndAppointment() {
+                this.selectedTrainer = null;
+                this.selectedAppointment = null;
+                this.fetchTrainers();
             }
-        }
+        },
+        computed: {
+            formatAppointmentDate() {
+                return function (isoDate) {
+                    const date = new Date(isoDate);
+                    const options = {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric'
+                    };
+                    return date.toLocaleString('en-US', options);
+                };
+            }
+        },
     };
 </script>
 
