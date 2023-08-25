@@ -25,7 +25,7 @@
                 </form>
                 <ul v-if="gyms" class="list-container">
                     <li v-for="gym in gyms" :key="gym._id" class="list-item list-item-style">
-                        {{ gym.name }} - {{ gym.location }} - {{ gym.owner }}
+                        {{ gym.name }} - {{ gym.location }} - {{ getOwnerNameById(gym.owner) }}
                         <button @click="deleteGym(gym._id)">Delete</button>
                     </li>
                 </ul>
@@ -50,16 +50,16 @@
                 </form>
                 <ul v-if="trainers" class="list-container">
                     <li v-for="trainer in trainers" :key="trainer._id" class="list-item list-item-style">
-                        {{ trainer.name }} - {{ trainer.gym }}
+                        {{ trainer.name }} - {{ getGymNameById(trainer.gym) }}
                         <button @click="deleteTrainer(trainer._id)">Delete</button>
                     </li>
                 </ul>
             </div>
             <div class="section">
-                <h2 class="section-title">Appointments</h2>
+                <h2 class="section-title">Trainings</h2>
                 <form @submit.prevent="addAppointment" class="form-container">
                     <div class="input-container">
-                        <input v-model="newAppointmentDate" placeholder="Appointment date" required>
+                        <flat-pickr v-model="newAppointmentDate" :config="datePickerConfig"></flat-pickr>
                     </div>
                     <div class="input-container">
                         <select v-model="newAppointmentTrainer" required>
@@ -70,61 +70,141 @@
                         </select>
                     </div>
                     <div class="input-container">
-                        <button type="submit">Add Appointment</button>
+                        <button type="submit">Add Date</button>
                     </div>
                 </form>
                 <ul v-if="appointments" class="list-container">
                     <li v-for="appointment in appointments" :key="appointment._id" class="list-item list-item-style">
-                        {{ appointment.date }} - {{ appointment.trainer && appointment.trainer.name ? appointment.trainer.name : '' }}
+                        {{ formatAppointmentDate(appointment.date) }} - {{ getTrainerNameById(appointment.trainer) }}
                         <button @click="deleteAppointment(appointment._id)">Delete</button>
                     </li>
                 </ul>
             </div>
+        </div>
+        <div class="users-section">
+            <h2>Users INFO</h2>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Selected Gym</th>
+                        <th>Selected Couch</th>
+                        <th>Selected Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="user in users" :key="user._id">
+                        <td>{{ user._id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.role }}</td>
+                        <td>{{ user.selectedGym ? user.selectedGym.name : 'N/A' }}</td>
+                        <td>{{ user.selectedTrainer ? user.selectedTrainer.name : 'N/A' }}</td>
+                        <td>{{ user.selectedAppointment ? user.selectedAppointment.time : 'N/A' }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </template>
 
 <script>
     import axios from 'axios';
+    import FlatPickr from 'vue-flatpickr-component';
+    import 'flatpickr/dist/flatpickr.css';
 
     export default {
+        components: {
+            FlatPickr,
+        },
         data() {
             return {
+                users: [],
                 trainers: null,
-                gyms: null,
+                gyms: [],
                 appointments: null,
-                owners: null,
+                owners: [],
                 errorMessage: null,
                 newTrainerName: '',
                 newTrainerGym: '',
                 newGymName: '',
                 newGymLocation: '',
                 newGymOwner: '',
-                newAppointmentDate: '',
-                newAppointmentTrainer: ''
+                newAppointmentDate: null,
+                newAppointmentTrainer: '',
+                datePickerConfig: {
+                    enableTime: true,
+                    dateFormat: 'Y-m-d H:i',
+                    minDate: new Date().toISOString() 
+                },
             };
         },
         created() {
             this.fetchData();
         },
+        computed: {
+            formatAppointmentDate() {
+                return function (isoDate) {
+                    const date = new Date(isoDate);
+                    const options = {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric'
+                    };
+                    return date.toLocaleString('en-US', options);
+                };
+            }
+        },
         methods: {
+            async fetchUsers() {
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        console.error('Token not found');
+                        return;
+                    }
+
+                    const { data } = await axios.get('http://localhost:3000/users', {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+
+                    if (data && Array.isArray(data)) {
+                        this.users = data;
+                        console.log("Fetched users:", this.users);
+                    } else {
+                        console.error("Unexpected data format:", data);
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                }
+            },
             async fetchData() {
                 try {
-                    const trainersResponse = await axios.get('/trainers');
+                    const trainersResponse = await axios.get('http://localhost:3000/trainers');
                     this.trainers = trainersResponse.data;
                     console.log('Trainers data:', this.trainers);
 
-                    const gymsResponse = await axios.get('/gyms');
+                    const gymsResponse = await axios.get('http://localhost:3000/gyms');
                     this.gyms = gymsResponse.data;
                     console.log('Gyms data:', this.gyms);
 
-                    const appointmentsResponse = await axios.get('/appointments');
+                    const appointmentsResponse = await axios.get('http://localhost:3000/appointments');
                     this.appointments = appointmentsResponse.data;
                     console.log('Appointments data:', this.appointments);
 
-                    const ownersResponse = await axios.get('/users');
+                    const ownersResponse = await axios.get('http://localhost:3000/users');
                     this.owners = ownersResponse.data.filter(user => user.role === 'owner');
                     console.log('Owners data:', this.owners);
+
+                    console.log('Data fetched successfully.');
+
+                    this.fetchUsers();
 
                 } catch (error) {
                     console.error(error);
@@ -134,7 +214,7 @@
             async addGym() {
                 try {
                     const response = await axios.post(
-                        '/gyms',
+                        'http://localhost:3000/gyms',
                         {
                             name: this.newGymName,
                             location: this.newGymLocation,
@@ -157,7 +237,7 @@
             },
             async deleteGym(id) {
                 try {
-                    const response = await axios.delete(`/gyms/${id}`);
+                    const response = await axios.delete(`http://localhost:3000/gyms/${id}`);
                     console.log(response);
                     this.gyms = this.gyms.filter(gym => gym._id !== id);
                 } catch (error) {
@@ -167,7 +247,7 @@
             },
             async addTrainer() {
                 try {
-                    const response = await axios.post('/trainers', {
+                    const response = await axios.post('http://localhost:3000/trainers', {
                         name: this.newTrainerName,
                         gym: this.newTrainerGym
                     });
@@ -181,8 +261,8 @@
             },
             async deleteTrainer(id) {
                 try {
-                    await axios.delete(`/trainers/${id}`);
-                    this.fetchData(); 
+                    await axios.delete(`http://localhost:3000/trainers/${id}`);
+                    this.fetchData();
                 } catch (error) {
                     console.error(error);
                     this.errorMessage = 'An error occurred while deleting a trainer. Please try again.';
@@ -190,15 +270,19 @@
             },
             async addAppointment() {
                 try {
-                    // Format the date
                     let date = new Date(this.newAppointmentDate);
                     let formattedDate = date.toISOString();
 
-                    const response = await axios.post('/appointments', {
-                        date: formattedDate, 
+                    console.log('Adding appointment:', formattedDate, this.newAppointmentTrainer);
+
+                    const response = await axios.post('http://localhost:3000/appointments', {
+                        date: formattedDate,
                         trainer: this.newAppointmentTrainer
                     });
-                    this.appointments.push(response.data);
+
+                    console.log('Appointment added:', response.data);
+
+                    this.appointments.push({ _id: response.data._id, date: formattedDate, trainer: response.data.trainer });
                     this.newAppointmentDate = '';
                     this.newAppointmentTrainer = '';
                 } catch (error) {
@@ -206,19 +290,65 @@
                     this.errorMessage = 'An error occurred while adding an appointment. Please try again.';
                 }
             },
+
             async deleteAppointment(id) {
                 try {
-                    await axios.delete(`/appointments/${id}`);
-                    this.fetchData();
+                    console.log('Deleting appointment with ID:', id);
+
+                    await axios.delete(`http://localhost:3000/appointments/${id}`);
+                    this.appointments = this.appointments.filter(appointment => appointment._id !== id);
+
+                    console.log('Appointment deleted successfully.');
                 } catch (error) {
                     console.error(error);
                     this.errorMessage = 'An error occurred while deleting an appointment. Please try again.';
                 }
             },
+            getOwnerNameById(id) {
+                const owner = this.owners.find(owner => owner._id === id);
+                return owner ? owner.username : 'Unknown';
+            },
+            getGymNameById(id) {
+                const gym = this.gyms.find(gym => gym._id === id);
+                return gym ? gym.name : 'Unknown';
+            },
+            getTrainerNameById(id) {
+                const trainer = this.trainers.find(trainer => trainer._id === id);
+                return trainer ? trainer.name : 'Unknown';
+            }
         },
     };
 </script>
+
 <style scoped>
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .users-table th,
+        .users-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .users-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+
+    .users-section {
+        background-color: #f2f2f2;
+        border-radius: 5px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+
+    .dashboard-container {
+        padding: 20px;
+    }
 
     .dashboard-container {
         display: flex;
