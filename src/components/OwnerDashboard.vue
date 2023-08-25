@@ -213,8 +213,7 @@
             },
             async addGym() {
                 try {
-                    const response = await axios.post(
-                        'http://localhost:3000/gyms',
+                    const response = await axios.post('/gyms',
                         {
                             name: this.newGymName,
                             location: this.newGymLocation,
