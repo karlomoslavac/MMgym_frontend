@@ -32,4 +32,4 @@ export default createStore({
             commit('logout');
         }
     }
-})
+});
