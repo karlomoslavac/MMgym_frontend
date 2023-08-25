@@ -180,8 +180,9 @@
                         console.error("Unexpected data format:", data);
                     }
 
-                } catch (error) {
-                    console.error('Error fetching users:', error);
+                catch (error) {
+                       console.error("Error in fetchOwners:", error);
+                       this.errorMessage = 'An error occurred. Please try again.';
                 }
             },
             async fetchData() {
