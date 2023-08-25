@@ -60,7 +60,7 @@
         },
         async created() {
             try {
-                const response = await axios.get('http://localhost:3000/gyms');
+                const response = await axios.get('/gyms');
                 this.gyms = response.data;
 
                 const loggedInUser = this.$store.state.user;
@@ -85,7 +85,7 @@
                     return;
                 }
                 try {
-                    const response = await axios.get(`http://localhost:3000/trainers/${this.selectedGym}/trainers`);
+                    const response = await axios.get(`/trainers/${this.selectedGym}/trainers`);
                     this.trainers = response.data;
                 } catch (error) {
                     console.error(error);
@@ -99,7 +99,7 @@
                         return;
                     }
 
-                    const response = await axios.get(`http://localhost:3000/appointments/trainers/${this.selectedTrainer}/appointments`);
+                    const response = await axios.get(`/appointments/trainers/${this.selectedTrainer}/appointments`);
                     this.appointments = response.data;
                 } catch (error) {
                     this.errorMessage = 'An error occurred. Please try again.';
@@ -121,9 +121,9 @@
                             appointmentId: appointment._id
                         };
 
-                        console.log("Sending the following data:", data);  // Debugging line
+                        console.log("Sending the following data:", data);  
 
-                        const response = await axios.post('http://localhost:3000/appointments/user-appointments', data);
+                        const response = await axios.post('/appointments/user-appointments', data);
                         console.log("Server response:", response.data);
 
                         if (response.data && response.data.success) {
@@ -138,7 +138,7 @@
                         this.errorMessage = 'Please select a trainer, gym and appointment.';
                     }
                 } catch (error) {
-                    console.error("Error response from server:", error.response ? error.response.data : 'No response data');  // Debugging line
+                    console.error("Error response from server:", error.response ? error.response.data : 'No response data');  
                     this.errorMessage = `An error occurred: ${error.message}`;
                 }
             },
