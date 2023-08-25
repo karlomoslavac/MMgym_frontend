@@ -4,7 +4,7 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 
-axios.defaults.baseURL = 'https://mmgymback.onrender.com';
+axios.defaults.baseURL = 'https://mmgymbackend.onrender.com';
 
 axios.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
