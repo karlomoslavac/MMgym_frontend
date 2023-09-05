@@ -8,9 +8,7 @@
                 <h2 class="section-title">Select a Gym</h2>
                 <select v-model="selectedGym" @change="resetTrainerAndAppointment">
                     <option disabled value="">Please select a gym</option>
-                    <option v-for="gym in gyms" :key="gym._id" :value="gym._id">
-                        {{ gym.name }}
-                    </option>
+                    <option v-for="gym in gyms" :key="gym._id" :value="gym._id">{{ gym.name }}</option>
                 </select>
             </div>
 
@@ -18,9 +16,7 @@
                 <h2 class="section-title">Select a Trainer</h2>
                 <select v-model="selectedTrainer" @change="fetchAppointments">
                     <option disabled value="">Please select a trainer</option>
-                    <option v-for="trainer in trainers" :key="trainer._id" :value="trainer._id">
-                        {{ trainer.name }}
-                    </option>
+                    <option v-for="trainer in trainers" :key="trainer._id" :value="trainer._id">{{ trainer.name }}</option>
                 </select>
             </div>
 
@@ -35,9 +31,7 @@
             </div>
         </div>
 
-        <button @click="confirmAppointment" class="confirm-button" :disabled="!selectedGym || !selectedTrainer || !selectedAppointment">Confirm Appointment</button>
-
-        <p v-if="reservationSuccess" class="success-message">You have successfully booked an appointment!</p>
+        <button @click="confirmAppointment" class="confirm-button">Confirm Appointment</button>
     </div>
 </template>
 
@@ -85,7 +79,7 @@
                     return;
                 }
                 try {
-                    const response = await axios.get(`/trainers/${this.selectedGym}/trainers`);
+                    const response = await axios.get(`/${this.selectedGym}/trainers`);
                     this.trainers = response.data;
                 } catch (error) {
                     console.error(error);
@@ -101,6 +95,9 @@
 
                     const response = await axios.get(`/appointments/trainers/${this.selectedTrainer}/appointments`);
                     this.appointments = response.data;
+
+                    this.confirmAppointment();
+
                 } catch (error) {
                     this.errorMessage = 'An error occurred. Please try again.';
                 }
@@ -115,31 +112,27 @@
                         const loggedInUser = this.$store.state.user;
 
                         const data = {
-                            userId: loggedInUser._id,
-                            trainerId: trainer._id,
-                            gymId: gym._id,
-                            appointmentId: appointment._id
+                            selectedGym: gym._id,
+                            selectedTrainer: trainer._id,
+                            selectedAppointment: appointment._id
                         };
 
-                        console.log("Sending the following data:", data);  
+                        const response = await axios.post(`/${loggedInUser._id}/selected`, data);
 
-                        const response = await axios.post('/appointments/user-appointments', data);
-                        console.log("Server response:", response.data);
-
-                        if (response.data && response.data.success) {
-                            this.confirmationMessage = `You have successfully booked an appointment with ${trainer.name} at ${gym.name} on ${appointment.date}.`;
+                        if (response.status === 200) {
+                            const formattedDate = this.formatAppointmentDate(appointment.date, true);
+                            this.confirmationMessage = `You have successfully booked an appointment with ${trainer.name} at ${gym.name} on ${formattedDate}.`;
                             this.reservationSuccess = true;
                             this.resetTrainerAndAppointment();
                         } else {
-                            this.errorMessage = `Server returned an error: ${response.data ? response.data.message : 'No message'}`;
+                            this.errorMessage = 'An error occurred while confirming the appointment.';
                         }
-
                     } else {
-                        this.errorMessage = 'Please select a trainer, gym and appointment.';
+                        this.errorMessage = 'Please select a trainer, gym, and appointment.';
                     }
                 } catch (error) {
-                    console.error("Error response from server:", error.response ? error.response.data : 'No response data');  
-                    this.errorMessage = `An error occurred: ${error.message}`;
+                    console.error('Error confirming appointment:', error);
+                    this.errorMessage = 'An error occurred while confirming the appointment.';
                 }
             },
             resetTrainerAndAppointment() {
@@ -229,6 +222,7 @@
     }
 
     .confirmation-message {
+        background-color: rgba(0, 0, 0, 0.77);
         color: green;
         padding: 10px;
         border-radius: 5px;
