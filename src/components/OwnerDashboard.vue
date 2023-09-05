@@ -101,7 +101,8 @@
                         <td>{{ user.role }}</td>
                         <td>{{ user.selectedGym ? user.selectedGym.name : 'N/A' }}</td>
                         <td>{{ user.selectedTrainer ? user.selectedTrainer.name : 'N/A' }}</td>
-                        <td>{{ user.selectedAppointment ? user.selectedAppointment.time : 'N/A' }}</td>
+                        <td>{{ user.selectedAppointment ? formatAppointmentDate(user.selectedAppointment.date) : 'N/A' }}</td>
+
                     </tr>
                 </tbody>
             </table>
