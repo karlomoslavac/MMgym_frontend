@@ -6,7 +6,7 @@
         <div class="selection-container">
             <div class="selection-box">
                 <h2 class="section-title">Select a Gym</h2>
-                <select v-model="selectedGym" @change="resetTrainerAndAppointment">
+                <select v-model="selectedGym" @change="fetchTrainers()">
                     <option disabled value="">Please select a gym</option>
                     <option v-for="gym in gyms" :key="gym._id" :value="gym._id">{{ gym.name }}</option>
                 </select>
@@ -14,7 +14,7 @@
 
             <div class="selection-box" v-if="selectedGym">
                 <h2 class="section-title">Select a Trainer</h2>
-                <select v-model="selectedTrainer" @change="fetchAppointments">
+                <select v-model="selectedTrainer" @change="fetchAppointments()">
                     <option disabled value="">Please select a trainer</option>
                     <option v-for="trainer in trainers" :key="trainer._id" :value="trainer._id">{{ trainer.name }}</option>
                 </select>
@@ -31,7 +31,8 @@
             </div>
         </div>
 
-        <button @click="confirmAppointment" class="confirm-button">Confirm Appointment</button>
+        <button v-if="selectedAppointment" @click="confirmAppointment" class="confirm-button">Confirm Appointment</button>
+
     </div>
 </template>
 
@@ -49,28 +50,17 @@
                 selectedAppointment: null,
                 errorMessage: null,
                 confirmationMessage: null,
-                reservationSuccess: false
+                reservationSuccess: false,
             };
         },
         async created() {
             try {
                 const response = await axios.get('/gyms');
                 this.gyms = response.data;
-
-                const loggedInUser = this.$store.state.user;
-                if (loggedInUser.selectedGym) {
-                    this.selectedGym = loggedInUser.selectedGym;
-                    this.selectedTrainer = loggedInUser.selectedTrainer;
-                    this.selectedAppointment = loggedInUser.selectedAppointment;
-                    await this.fetchTrainers();
-                }
             } catch (error) {
                 console.error(error);
                 this.errorMessage = 'An error occurred. Please try again.';
             }
-        },
-        watch: {
-            selectedGym: 'resetTrainerAndAppointment'
         },
         methods: {
             async fetchTrainers() {
@@ -79,8 +69,10 @@
                     return;
                 }
                 try {
-                    const response = await axios.get(`trainers/${this.selectedGym}/trainers`);
+                    const response = await axios.get(`/trainers/${this.selectedGym}/trainers`);
                     this.trainers = response.data;
+                    this.selectedTrainer = null;
+                    this.selectedAppointment = null;
                 } catch (error) {
                     console.error(error);
                     this.errorMessage = 'An error occurred. Please try again.';
@@ -95,18 +87,16 @@
 
                     const response = await axios.get(`/appointments/trainers/${this.selectedTrainer}/appointments`);
                     this.appointments = response.data;
-
-                    this.confirmAppointment();
-
+                    this.selectedAppointment = null;
                 } catch (error) {
                     this.errorMessage = 'An error occurred. Please try again.';
                 }
             },
             async confirmAppointment() {
                 try {
-                    const trainer = this.trainers.find(t => t._id === this.selectedTrainer);
-                    const gym = this.gyms.find(g => g._id === this.selectedGym);
-                    const appointment = this.appointments.find(a => a._id === this.selectedAppointment);
+                    const trainer = this.trainers.find((t) => t._id === this.selectedTrainer);
+                    const gym = this.gyms.find((g) => g._id === this.selectedGym);
+                    const appointment = this.appointments.find((a) => a._id === this.selectedAppointment);
 
                     if (trainer && gym && appointment) {
                         const loggedInUser = this.$store.state.user;
@@ -114,16 +104,16 @@
                         const data = {
                             selectedGym: gym._id,
                             selectedTrainer: trainer._id,
-                            selectedAppointment: appointment._id
+                            selectedAppointment: appointment._id,
                         };
 
                         const response = await axios.post(`/users/${loggedInUser._id}/selected`, data);
 
                         if (response.status === 200) {
-                            const formattedDate = this.formatAppointmentDate(appointment.date, true);
-                            this.confirmationMessage = `You have successfully booked an appointment with ${trainer.name} at ${gym.name} on ${formattedDate}.`;
+                            this.confirmationMessage = `You have successfully booked an appointment with ${trainer.name} at ${gym.name} on ${this.formatAppointmentDate(appointment.date)}.`;
+
                             this.reservationSuccess = true;
-                            this.resetTrainerAndAppointment();
+                            this.resetToInitialState();
                         } else {
                             this.errorMessage = 'An error occurred while confirming the appointment.';
                         }
@@ -135,26 +125,25 @@
                     this.errorMessage = 'An error occurred while confirming the appointment.';
                 }
             },
-            resetTrainerAndAppointment() {
+
+            resetToInitialState() {
+                this.selectedGym = null;
                 this.selectedTrainer = null;
                 this.selectedAppointment = null;
-                this.fetchTrainers();
-            }
-        },
-        computed: {
-            formatAppointmentDate() {
-                return function (isoDate) {
-                    const date = new Date(isoDate);
-                    const options = {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: 'numeric'
-                    };
-                    return date.toLocaleString('en-US', options);
+                this.errorMessage = null;
+                this.reservationSuccess = false;
+            },
+            formatAppointmentDate(isoDate) {
+                const date = new Date(isoDate);
+                const options = {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
                 };
-            }
+                return date.toLocaleString('en-US', options);
+            },
         },
     };
 </script>
