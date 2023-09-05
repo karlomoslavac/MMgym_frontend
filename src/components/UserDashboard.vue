@@ -79,7 +79,7 @@
                     return;
                 }
                 try {
-                    const response = await axios.get(`/${this.selectedGym}/trainers`);
+                    const response = await axios.get(`trainers/${this.selectedGym}/trainers`);
                     this.trainers = response.data;
                 } catch (error) {
                     console.error(error);
@@ -117,7 +117,7 @@
                             selectedAppointment: appointment._id
                         };
 
-                        const response = await axios.post(`/${loggedInUser._id}/selected`, data);
+                        const response = await axios.post(`/users/${loggedInUser._id}/selected`, data);
 
                         if (response.status === 200) {
                             const formattedDate = this.formatAppointmentDate(appointment.date, true);
