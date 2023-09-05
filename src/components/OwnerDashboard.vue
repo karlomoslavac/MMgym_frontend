@@ -143,22 +143,33 @@
         created() {
             this.fetchData();
         },
-        computed: {
-            formatAppointmentDate() {
-                return function (isoDate) {
-                    const date = new Date(isoDate);
-                    const options = {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: 'numeric'
-                    };
-                    return date.toLocaleString('en-US', options);
-                };
-            }
-        },
+        
         methods: {
+
+            formatAppointmentDate(isoDate) {
+                console.log('Received isoDate:', isoDate);
+
+                const date = new Date(isoDate);
+                console.log('Parsed date:', date);
+
+                if (isNaN(date)) {
+                    console.log('Invalid date');
+                    return 'Invalid Date';
+                }
+
+                const options = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: 'numeric',
+                };
+                const formattedDate = date.toLocaleString('en-US', options);
+                console.log('Formatted date:', formattedDate);
+
+                return formattedDate;
+            },
+            
             async fetchUsers() {
                 try {
                     const token = localStorage.getItem('token');
